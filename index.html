@@ -1,0 +1,40 @@
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Display Fetched HTML</title>
+            </head>
+            <body>
+              <div id="fetchedContent">
+                <!-- Fetched content will be inserted here -->
+              </div>
+
+              <script>
+                // Prompt the user for a URL
+                const url = prompt("Enter the URL");
+
+                // Validate the URL (check if it's not empty)
+                if (url.trim() !== "") {
+                  // Fetch the HTML content
+                  fetch('https://' + url)
+                    .then(response => {
+                      if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                      }
+                      return response.text();
+                    })
+                    .then(html => {
+                      // Insert the fetched HTML content into the DOM
+                      document.getElementById('fetchedContent').innerHTML = html;
+                    })
+                    .catch(error => {
+                      console.error('There was a problem with the fetch operation:', error);
+                      document.getElementById('fetchedContent').textContent = 'Failed to fetch content. Please check the URL and try again.';
+                    });
+                } else {
+                  console.error('Invalid URL');
+                }
+              </script>
+            </body>
+            </html>
