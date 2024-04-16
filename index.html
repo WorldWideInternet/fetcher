@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fetch Content</title>
+  <style>
+    #fetchedContent {
+      width: 100%;
+      height: 100vh;
+      border: none;
+    }
+  </style>
 </head>
 <body>
   <div id="fetchedContent">
@@ -25,24 +32,44 @@
           return response.text();
         })
         .then(html => {
-          // Insert the fetched HTML content into the DOM
-          document.getElementById('fetchedContent').innerHTML = html;
+          // Create a new HTML document
+          const doc = document.implementation.createHTMLDocument();
+          doc.documentElement.innerHTML = html;
 
-          // Fetch images and replace their src attributes
-          const images = document.querySelectorAll('img');
-          images.forEach(img => {
-            const src = img.getAttribute('src');
-            fetch(src)
-              .then(response => response.blob())
-              .then(blob => {
-                const objectURL = URL.createObjectURL(blob);
-                img.setAttribute('src', objectURL);
-              })
-              .catch(error => console.error('Error fetching image:', error));
+          // Fetch and replace resources (images, CSS, JavaScript)
+          const fetchResources = async () => {
+            const fetchAndReplace = async (element, attr) => {
+              const url = element.getAttribute(attr);
+              if (url) {
+                try {
+                  const response = await fetch(url);
+                  const data = await response.text();
+                  const replacement = document.createElement(element.tagName);
+                  replacement[attr] = URL.createObjectURL(new Blob([data], { type: response.headers.get('content-type') }));
+                  element.replaceWith(replacement);
+                } catch (error) {
+                  console.error(`Error fetching ${attr}:`, error);
+                }
+              }
+            };
+
+            // Fetch and replace images
+            const images = doc.querySelectorAll('img');
+            images.forEach(img => fetchAndReplace(img, 'src'));
+
+            // Fetch and replace CSS files
+            const links = doc.querySelectorAll('link[rel="stylesheet"]');
+            links.forEach(link => fetchAndReplace(link, 'href'));
+
+            // Fetch and replace JavaScript files
+            const scripts = doc.querySelectorAll('script[src]');
+            scripts.forEach(script => fetchAndReplace(script, 'src'));
+          };
+
+          // Execute fetchResources function and display the fetched content
+          fetchResources().then(() => {
+            document.getElementById('fetchedContent').appendChild(doc.documentElement);
           });
-
-          // Fetch games or other resources and embed them as needed
-          // Add code here to handle fetching games or other resources
         })
         .catch(error => {
           console.error('There was a problem with the fetch operation:', error);
