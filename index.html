@@ -11,77 +11,87 @@
   </div>
 
   <script>
-    // Prompt the user for a URL
-    const url = prompt("Enter the URL");
+    // Function to fetch and display content from a URL
+    const fetchAndDisplayContent = (url) => {
+      // Validate the URL (check if it's not empty)
+      if (url.trim() !== "") {
+        // Fetch the HTML content
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.text();
+          })
+          .then(html => {
+            // Create a new HTML document
+            const doc = document.implementation.createHTMLDocument();
+            doc.documentElement.innerHTML = html;
 
-    // Validate the URL (check if it's not empty)
-    if (url.trim() !== "") {
-      // Fetch the HTML content
-      fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.text();
-        })
-        .then(html => {
-          // Create a new HTML document
-          const doc = document.implementation.createHTMLDocument();
-          doc.documentElement.innerHTML = html;
+            // Function to fetch CSS and JS resources
+            const fetchResources = async () => {
+              // Fetch CSS files
+              const cssLinks = doc.querySelectorAll('link[rel="stylesheet"]');
+              cssLinks.forEach(link => {
+                fetch(link.href)
+                  .then(response => response.text())
+                  .then(css => {
+                    const style = document.createElement('style');
+                    style.textContent = css;
+                    document.head.appendChild(style);
+                  })
+                  .catch(error => console.error('Error fetching CSS:', error));
+              });
 
-          // Function to fetch CSS and JS resources
-          const fetchResources = async () => {
-            // Fetch CSS files
-            const cssLinks = doc.querySelectorAll('link[rel="stylesheet"]');
-            cssLinks.forEach(link => {
-              fetch(link.href)
-                .then(response => response.text())
-                .then(css => {
-                  const style = document.createElement('style');
-                  style.textContent = css;
-                  document.head.appendChild(style);
-                })
-                .catch(error => console.error('Error fetching CSS:', error));
+              // Fetch JavaScript files
+              const scriptTags = doc.querySelectorAll('script[src]');
+              scriptTags.forEach(script => {
+                fetch(script.src)
+                  .then(response => response.text())
+                  .then(js => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = js;
+                    document.body.appendChild(newScript);
+                  })
+                  .catch(error => console.error('Error fetching JavaScript:', error));
+              });
+
+              // Fetch images
+              const imgTags = doc.querySelectorAll('img');
+              imgTags.forEach(img => {
+                fetch(img.src)
+                  .then(response => response.blob())
+                  .then(blob => {
+                    const objectURL = URL.createObjectURL(blob);
+                    img.src = objectURL;
+                  })
+                  .catch(error => console.error('Error fetching image:', error));
+              });
+            };
+
+            // Execute fetchResources function and display the fetched content
+            fetchResources().then(() => {
+              document.getElementById('fetchedContent').innerHTML = "";
+              document.getElementById('fetchedContent').appendChild(doc.documentElement);
             });
-
-            // Fetch JavaScript files
-            const scriptTags = doc.querySelectorAll('script[src]');
-            scriptTags.forEach(script => {
-              fetch(script.src)
-                .then(response => response.text())
-                .then(js => {
-                  const newScript = document.createElement('script');
-                  newScript.textContent = js;
-                  document.body.appendChild(newScript);
-                })
-                .catch(error => console.error('Error fetching JavaScript:', error));
-            });
-
-            // Fetch images
-            const imgTags = doc.querySelectorAll('img');
-            imgTags.forEach(img => {
-              fetch(img.src)
-                .then(response => response.blob())
-                .then(blob => {
-                  const objectURL = URL.createObjectURL(blob);
-                  img.src = objectURL;
-                })
-                .catch(error => console.error('Error fetching image:', error));
-            });
-          };
-
-          // Execute fetchResources function and display the fetched content
-          fetchResources().then(() => {
-            document.getElementById('fetchedContent').appendChild(doc.documentElement);
+          })
+          .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+            document.getElementById('fetchedContent').textContent = 'Failed to fetch content. Please check the URL and try again.';
           });
-        })
-        .catch(error => {
-          console.error('There was a problem with the fetch operation:', error);
-          document.getElementById('fetchedContent').textContent = 'Failed to fetch content. Please check the URL and try again.';
-        });
-    } else {
-      console.error('Invalid URL');
-    }
+      } else {
+        console.error('Invalid URL');
+      }
+    };
+
+    // Add event listener to all links
+    document.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', function(event) {
+        event.preventDefault(); // Prevent the default action of following the link
+        const url = this.getAttribute('href'); // Get the href attribute of the clicked link
+        fetchAndDisplayContent(url); // Fetch and display content from the URL
+      });
+    });
   </script>
 </body>
 </html>
